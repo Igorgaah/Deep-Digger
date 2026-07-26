@@ -19,6 +19,9 @@ namespace DeepDigger.Gameplay.Input
         /// <summary>Screen-space pointer position, forwarded for aim calculations.</summary>
         public Vector2 PointerPosition { get; private set; }
 
+        /// <summary><c>true</c> while the attack/mine button is held (used for continuous mining).</summary>
+        public bool IsAttackHeld { get; private set; }
+
         public event Action DashPerformed;
         public event Action AttackPerformed;
         public event Action InteractPerformed;
@@ -46,6 +49,7 @@ namespace DeepDigger.Gameplay.Input
             _sprint.performed -= OnSprintStarted;
             _sprint.canceled -= OnSprintCanceled;
             _attack.performed -= OnAttack;
+            _attack.canceled -= OnAttackReleased;
             _interact.performed -= OnInteract;
 
             _gameplayMap.Disable();
@@ -89,13 +93,21 @@ namespace DeepDigger.Gameplay.Input
             _sprint.performed += OnSprintStarted;
             _sprint.canceled += OnSprintCanceled;
             _attack.performed += OnAttack;
+            _attack.canceled += OnAttackReleased;
             _interact.performed += OnInteract;
         }
 
         private void OnMove(InputAction.CallbackContext ctx) => MoveInput = ctx.ReadValue<Vector2>();
         private void OnLook(InputAction.CallbackContext ctx) => PointerPosition = ctx.ReadValue<Vector2>();
         private void OnDash(InputAction.CallbackContext ctx) => DashPerformed?.Invoke();
-        private void OnAttack(InputAction.CallbackContext ctx) => AttackPerformed?.Invoke();
+
+        private void OnAttack(InputAction.CallbackContext ctx)
+        {
+            IsAttackHeld = true;
+            AttackPerformed?.Invoke();
+        }
+
+        private void OnAttackReleased(InputAction.CallbackContext ctx) => IsAttackHeld = false;
         private void OnInteract(InputAction.CallbackContext ctx) => InteractPerformed?.Invoke();
         private void OnSprintStarted(InputAction.CallbackContext ctx) => SprintToggled?.Invoke(true);
         private void OnSprintCanceled(InputAction.CallbackContext ctx) => SprintToggled?.Invoke(false);

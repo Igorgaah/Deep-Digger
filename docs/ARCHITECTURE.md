@@ -67,6 +67,31 @@ pode ser trocado por uma virtual camera do Cinemachine depois **sem tocar** no g
 Habilitado no `ProjectSettings` (`activeInputHandler: 2`) para o novo Input System
 funcionar; "Both" evita quebrar qualquer código/pacote que ainda espere o backend legado.
 
+### ADR-005 — Mundo: dados, geração e renderização separados
+**Decisão:** o mundo é dividido em três responsabilidades desacopladas:
+- `WorldGrid` — **dados puros** (sem `MonoBehaviour`/Tilemap): estado e HP dos blocos,
+  regras de dano. Testável isoladamente.
+- `WorldGeneratorSO` — **estratégia de geração** como ScriptableObject. `FlatWorldGenerator`
+  é a impl. de referência; a Fase 4 adiciona `ProceduralWorldGenerator` **sem tocar** no resto.
+- `IWorldView` / `TilemapWorldRenderer` — **renderização** trocável (Tilemap hoje).
+
+`WorldController` costura os três e é a **única autoridade** que altera terreno, publicando
+`BlockDamagedEvent`/`BlockDestroyedEvent` no EventBus.
+**Por quê:** permite testar mineração sem engine, trocar algoritmo de geração e backend de
+render sem efeito colateral, e mantém `MiningSystem` alheio a Tilemap.
+
+### ADR-006 — Tiles coloridos gerados em runtime
+`TilemapWorldRenderer` cria um `Tile` por `BlockDefinition` usando um sprite branco 1×1
+tingido pela cor do bloco (flyweight), quando não há tile autorado. Assim a mina é **visível
+e colidível sem nenhuma arte**, acelerando a iteração de gameplay antes do pipeline de pixel art.
+
+### ADR-007 — Mineração dirigida pela picareta + custo de energia
+`MiningSystem` (no player) faz a ponte input→mundo: mira pelo ponteiro, respeita o **alcance**
+da picareta, gasta **energia por golpe** e usa a cadência/dano da `PickaxeDefinition`. Picareta
+de nível abaixo da **Dureza** do bloco fica mais lenta (regra "muito lenta"), não impossível.
+Drops nascem aqui de forma mínima na Fase 3; a Fase 10 (Loot) move para um `LootSpawner` que
+escuta `BlockDestroyedEvent`.
+
 ---
 
 ## 3. Setup no Editor (necessário uma vez para rodar a Fase 2)
@@ -94,6 +119,28 @@ Editor. Passos (poucos cliques):
 > Assim que forem criados prefabs/cenas, **comite também os arquivos `.meta`** gerados
 > pelo Unity (eles guardam os GUIDs que ligam os assets). Os `.meta` já entram no git.
 
+### Setup adicional da Fase 3 (mundo/mineração)
+
+1. **BlockDefinitions:** em `Assets/ScriptableObjects/` → *Create → Deep Digger → World →
+   Block Definition*. Crie ao menos um bloco de preenchimento (ex.: `Block_Stone`, Vida 2,
+   Dureza 0, cor cinza) e opcionalmente um `Block_Border` (categoria *Indestructible*).
+   Crie também minérios (Ferro Vida 5, Ouro Vida 10 Dureza 2, Adamantita Vida 50 Dureza 4…).
+2. **Pickaxe:** *Create → Deep Digger → World → Pickaxe Definition* (ex.: `Pickaxe_Wood`,
+   Tier 0, Dano 1, Swing 0.35, Alcance 1.8).
+3. **Gerador:** *Create → Deep Digger → World → Generators → Flat*. Atribua `fillBlock`
+   (e `borderBlock`), defina largura/altura.
+4. **Mundo na cena:** crie um GameObject `World` com um componente **Grid** (cell size
+   `1,1,0`) e o `WorldController`. Como filho, um GameObject `Tilemap` com:
+   `Tilemap` + `TilemapRenderer` + `TilemapWorldRenderer` e (recomendado) `TilemapCollider2D`
+   + `CompositeCollider2D` + `Rigidbody2D` (Body Type = *Static*, marque *Used By Composite*
+   no TilemapCollider2D) para colisão com o jogador.
+5. No `WorldController`: atribua o **gerador**, e (opcional) arraste o **Player** em
+   *Player To Place* para nascer no bôlsão inicial.
+6. **Player:** adicione o componente `MiningSystem` e atribua `InputReader`, `PlayerAim`,
+   `EnergySystem`, `WorldController` (ou deixe achar sozinho) e a `PickaxeDefinition`.
+7. **Play:** segure o **clique esquerdo** mirando um bloco dentro do alcance para minerar;
+   blocos quebram, somem (com colisão) e a energia cai a cada golpe.
+
 ---
 
 ## 4. Progresso do roadmap
@@ -102,7 +149,7 @@ Editor. Passos (poucos cliques):
 |-----:|-----------|:------:|
 | 1 | Projeto, git, packages, estrutura, asmdefs | ✅ |
 | 2 | Movimento, Input, Câmera, Energia, Dash | ✅ |
-| 3 | Sistema de blocos, mineração, tilemap | ⏳ próximo |
-| 4 | Geração procedural | ⬜ |
+| 3 | Sistema de blocos, mineração, tilemap | ✅ |
+| 4 | Geração procedural | ⏳ próximo |
 | 5 | Inventário | ⬜ |
 | 6–20 | Recursos → Steam | ⬜ |
