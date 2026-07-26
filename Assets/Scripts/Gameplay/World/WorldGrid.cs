@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DeepDigger.Gameplay.World
@@ -48,6 +49,12 @@ namespace DeepDigger.Gameplay.World
 
         /// <summary>Cell where the player should start (carved out by the generator).</summary>
         public Vector2Int SpawnCell { get; set; }
+
+        /// <summary>
+        /// Points of interest recorded by the generator (chests, events, ruins…). Filled during
+        /// generation; consumed by loot/event/NPC systems in later phases.
+        /// </summary>
+        public List<WorldFeature> Features { get; } = new();
 
         /// <summary>Raised when a single cell changes (dug or damaged). Payload is the cell coordinate.</summary>
         public event Action<Vector2Int> CellChanged;

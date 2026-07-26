@@ -92,6 +92,23 @@ de nível abaixo da **Dureza** do bloco fica mais lenta (regra "muito lenta"), n
 Drops nascem aqui de forma mínima na Fase 3; a Fase 10 (Loot) move para um `LootSpawner` que
 escuta `BlockDestroyedEvent`.
 
+### ADR-008 — Geração procedural: 3 algoritmos + conectividade garantida
+**Decisão:** `ProceduralWorldGenerator : WorldGeneratorSO` combina:
+- **Cellular Automata** para cavernas orgânicas, **gated por uma máscara Perlin** de baixa
+  frequência — assim as cavernas ficam em bolsões e a mina continua majoritariamente sólida
+  (fiel à fantasia escavável); a maior parte do mundo é aberta **cavando**, não pré-gerada.
+- **Veios de minério por profundidade** via `OreSpawnRule` (Perlin por regra; faixa de
+  profundidade normalizada 0→1; limiar = raridade). Regras avaliadas em ordem (raras primeiro).
+- **Passo de conectividade**: flood-fill (BFS) rotula regiões abertas e **corredores em L**
+  ligam cada região isolada ao spawn — nunca um mapa impossível ("garantir conectividade").
+**Alternativas:** BSP puro para salas (mais estruturado, menos orgânico — mantido como opção
+futura para ruínas), drunkard-walk (menos controlável).
+**Por quê:** cada semente gera um mapa único e justo; e como o seam da Fase 3 já existia, este
+gerador entrou **sem alterar** `WorldController`, renderer ou mineração — basta trocar o asset.
+
+> Baús/eventos/ruínas são gravados como `WorldFeature` (marcadores por célula) em
+> `WorldGrid.Features`; as fases de Loot/Eventos/NPCs leem essa lista e instanciam as entidades.
+
 ---
 
 ## 3. Setup no Editor (necessário uma vez para rodar a Fase 2)
@@ -141,6 +158,20 @@ Editor. Passos (poucos cliques):
 7. **Play:** segure o **clique esquerdo** mirando um bloco dentro do alcance para minerar;
    blocos quebram, somem (com colisão) e a energia cai a cada golpe.
 
+### Setup adicional da Fase 4 (geração procedural)
+
+1. Crie os `BlockDefinition` dos minérios/perigos que quiser distribuir (ex.: `Block_Iron`,
+   `Block_Gold`, `Block_Ruby`, `Block_Crystal`, `Block_Lava` com categoria *Hazard*).
+2. *Create → Deep Digger → World → Generators → Procedural*. Atribua `baseRock`/`borderBlock`
+   e preencha a lista **Ore Rules** — uma entrada por minério, com faixa de profundidade
+   (0 = topo, 1 = fundo) e limiar (maior = mais raro). Ex.: Ferro `0.0–0.5`, Ouro `0.4–0.8`
+   (limiar alto), Cristal `0.8–1.0`. **Coloque os mais raros/profundos no topo da lista.**
+3. No `WorldController`, troque o campo **Generator** pelo `ProceduralWorldGenerator`
+   (deixe *Randomize Seed* marcado para um mapa novo a cada partida). Nada mais muda.
+4. **Play:** cada partida gera uma mina única — cavernas orgânicas conectadas, veios de
+   minério mais valiosos quanto mais fundo, e marcadores de baú/evento prontos para as
+   próximas fases.
+
 ---
 
 ## 4. Progresso do roadmap
@@ -150,6 +181,6 @@ Editor. Passos (poucos cliques):
 | 1 | Projeto, git, packages, estrutura, asmdefs | ✅ |
 | 2 | Movimento, Input, Câmera, Energia, Dash | ✅ |
 | 3 | Sistema de blocos, mineração, tilemap | ✅ |
-| 4 | Geração procedural | ⏳ próximo |
-| 5 | Inventário | ⬜ |
+| 4 | Geração procedural | ✅ |
+| 5 | Inventário | ⏳ próximo |
 | 6–20 | Recursos → Steam | ⬜ |
