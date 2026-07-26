@@ -1,0 +1,61 @@
+# ============================================
+# Unity .gitignore (Deep Digger)
+# ============================================
+
+# Pastas geradas pela Unity (cache/build — nunca versionar)
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+
+# Assets gerados automaticamente
+/[Aa]ssets/AssetStoreTools*
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# Recorder / Gráficos
+/[Rr]ecordings/
+
+# Arquivos de projeto de IDEs
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Cache do Rider/Visual Studio
+ExportedObj/
+.consulo/
+*.csproj.meta
+
+# Builds de plataformas
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crashlytics / relatórios de crash gerados
+crashlytics-build.properties
+
+# Backups do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos temporários da Unity
+sysinfo.txt
+*.stackdump
