@@ -1,0 +1,44 @@
+# ============================================
+# Deep Digger — atributos de git (projeto Unity)
+# ============================================
+
+# Normaliza fim de linha automaticamente para arquivos de texto.
+* text=auto
+
+# Fontes e config sempre com LF no repositório.
+*.cs        text diff=csharp
+*.asmdef    text
+*.json      text
+*.md        text
+*.txt       text
+*.shader    text
+*.gitattributes text
+*.gitignore text
+
+# --------------------------------------------
+# Arquivos YAML da Unity — habilita o merge inteligente (UnityYAMLMerge).
+# Configure uma vez: git config merge.unityyamlmerge.driver "<caminho>/UnityYAMLMerge merge -p %O %B %A %A"
+# --------------------------------------------
+*.unity     merge=unityyamlmerge eol=lf
+*.prefab    merge=unityyamlmerge eol=lf
+*.asset     merge=unityyamlmerge eol=lf
+*.meta      merge=unityyamlmerge eol=lf
+*.controller merge=unityyamlmerge eol=lf
+*.anim      merge=unityyamlmerge eol=lf
+*.mat       merge=unityyamlmerge eol=lf
+
+# --------------------------------------------
+# Assets binários — tratados como binário e (idealmente) via Git LFS no futuro.
+# --------------------------------------------
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.psd   binary
+*.aseprite binary
+*.wav   binary
+*.mp3   binary
+*.ogg   binary
+*.ttf   binary
+*.otf   binary
+*.fbx   binary
