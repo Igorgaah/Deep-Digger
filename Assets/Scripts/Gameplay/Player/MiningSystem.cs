@@ -1,4 +1,5 @@
 using DeepDigger.Gameplay.Input;
+using DeepDigger.Gameplay.Inventories;
 using DeepDigger.Gameplay.World;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ namespace DeepDigger.Gameplay.Player
         [SerializeField] private PlayerAim aim;
         [SerializeField] private EnergySystem energy;
         [SerializeField] private WorldController world;
+        [SerializeField] private InventoryComponent inventory;
 
         [Header("Equipment")]
         [SerializeField] private PickaxeDefinition pickaxe;
@@ -36,6 +38,7 @@ namespace DeepDigger.Gameplay.Player
         {
             if (aim == null) aim = GetComponent<PlayerAim>();
             if (energy == null) energy = GetComponent<EnergySystem>();
+            if (inventory == null) inventory = GetComponent<InventoryComponent>();
             if (world == null) world = FindFirstObjectByType<WorldController>();
         }
 
@@ -75,16 +78,26 @@ namespace DeepDigger.Gameplay.Player
             _swingCooldown = interval;
 
             if (result.Outcome == MiningOutcome.Destroyed)
-                SpawnDrop(result.Block, target);
+                CollectDrop(result.Block, target);
         }
 
-        // Minimal drop spawn for Fase 3; Fase 10 (Loot) moves this to a LootSpawner listening to
-        // BlockDestroyedEvent, with proper loot tables and item stacks.
-        private void SpawnDrop(BlockDefinition block, Vector3 position)
+        // Ore goes straight to the inventory, closing the mine→store loop. The physical DropPrefab is a
+        // fallback for now; Fase 10 (Loot) formalizes loot tables and ground pickups via a LootSpawner
+        // listening to BlockDestroyedEvent.
+        private void CollectDrop(BlockDefinition block, Vector3 position)
         {
-            if (block == null || block.DropPrefab == null) return;
+            if (block == null) return;
 
             int amount = block.RollDropAmount();
+            if (amount <= 0) return;
+
+            if (block.DropItem != null && inventory != null)
+            {
+                inventory.Add(block.DropItem, amount);
+                return;
+            }
+
+            if (block.DropPrefab == null) return;
             for (int i = 0; i < amount; i++)
             {
                 Vector2 jitter = Random.insideUnitCircle * 0.15f;

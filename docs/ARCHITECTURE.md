@@ -109,6 +109,22 @@ gerador entrou **sem alterar** `WorldController`, renderer ou mineração — ba
 > Baús/eventos/ruínas são gravados como `WorldFeature` (marcadores por célula) em
 > `WorldGrid.Features`; as fases de Loot/Eventos/NPCs leem essa lista e instanciam as entidades.
 
+### ADR-009 — Inventário: modelo puro + UI separada (assembly próprio)
+**Decisão:** o inventário é dividido em:
+- **Modelo** (`Inventory`, `ItemStack`, `ItemDefinition`) — C# puro no assembly `Gameplay`,
+  testável e serializável (pronto para o Save). Regras (stack, peso, `MoveOrSwap`) vivem aqui.
+- **UI** (`InventoryView`, `InventorySlotUI`, `InventoryTooltip`) — assembly próprio
+  **`DeepDigger.UI`** (uGUI), pura apresentação, observa o modelo via eventos `SlotChanged`/`Changed`.
+**Por quê:** o loop *minerar → guardar* funciona e é testável **sem UI**; e um erro de versão de
+package de UI isola-se no assembly `DeepDigger.UI` sem afetar modelo/mineração.
+**Notas:** usei `UnityEngine.UI` (uGUI) + `Text` legado para não depender do setup de TMP Essentials
+neste início (upgrade para TextMeshPro é local); a UI assume canvas *Screen Space – Overlay*.
+O drag&drop usa os handlers de `EventSystems` + um ícone-fantasma que segue o cursor.
+
+> ⚠️ **Namespace `Inventories` (plural), não `Inventory`:** a classe modelo se chama `Inventory`;
+> um namespace `...Inventory` faria `Inventory` resolver para o namespace (CS0118) em código
+> irmão de gameplay. Mesma regra do `Cameras` (ver Convenção de namespaces).
+
 ---
 
 ## 3. Setup no Editor (necessário uma vez para rodar a Fase 2)
@@ -172,6 +188,27 @@ Editor. Passos (poucos cliques):
    minério mais valiosos quanto mais fundo, e marcadores de baú/evento prontos para as
    próximas fases.
 
+### Setup adicional da Fase 5 (inventário)
+
+1. **Package:** o `com.unity.ugui` foi adicionado ao manifest; ao abrir, o Package Manager
+   resolve (e importa TextMeshPro junto — não é obrigatório usar TMP nesta fase).
+2. **Itens:** *Create → Deep Digger → Items → Item Definition* para cada minério (ícone,
+   descrição, stack, peso). Ex.: `Item_Iron`, `Item_Gold`.
+3. **Ligar minério → item:** em cada `BlockDefinition` de minério, arraste o `ItemDefinition`
+   correspondente no campo **Drop Item**. Ao minerar, o item entra direto no inventário.
+4. **Player:** adicione o componente `InventoryComponent` (defina colunas/linhas/peso). O
+   `MiningSystem` acha o inventário sozinho (mesmo GameObject) ou arraste no campo *Inventory*.
+5. **UI (uGUI, canvas Screen Space – Overlay):**
+   - Um `Canvas` com `GraphicRaycaster` e um `EventSystem` na cena.
+   - Painel do inventário com um `GridLayoutGroup` (o *slotParent*).
+   - **Prefab de slot:** um `Image` de fundo (*Raycast Target* ✔) + `InventorySlotUI`, com um
+     `Image` filho para o ícone e um `Text` para a quantidade (referências atribuídas no prefab).
+   - Um `Image` "dragIcon" no topo do canvas com *Raycast Target* **desmarcado**.
+   - Um painel de `InventoryTooltip` (root + textos de nome/descrição/detalhe).
+   - Adicione `InventoryView` e ligue *source*, *slotParent*, *slotPrefab*, *dragIcon*, *tooltip*.
+6. **Play:** minere para encher a mochila; arraste itens entre slots (merge/troca) e passe o
+   mouse para ver o tooltip.
+
 ---
 
 ## 4. Progresso do roadmap
@@ -182,5 +219,6 @@ Editor. Passos (poucos cliques):
 | 2 | Movimento, Input, Câmera, Energia, Dash | ✅ |
 | 3 | Sistema de blocos, mineração, tilemap | ✅ |
 | 4 | Geração procedural | ✅ |
-| 5 | Inventário | ⏳ próximo |
-| 6–20 | Recursos → Steam | ⬜ |
+| 5 | Inventário | ✅ |
+| 6 | Recursos (minérios/itens) | ⏳ próximo |
+| 7–20 | Picaretas → Steam | ⬜ |

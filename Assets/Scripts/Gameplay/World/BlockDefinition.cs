@@ -1,3 +1,4 @@
+using DeepDigger.Gameplay.Items;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -28,7 +29,9 @@ namespace DeepDigger.Gameplay.World
         [SerializeField] private Color color = new(0.5f, 0.5f, 0.5f, 1f);
 
         [Header("Drop (Loot)")]
-        [Tooltip("Prefab solto ao quebrar (opcional até a fase de Itens/Loot).")]
+        [Tooltip("Item de recurso adicionado direto ao inventário ao minerar (ex.: minério). Preferido sobre o prefab.")]
+        [SerializeField] private ItemDefinition dropItem;
+        [Tooltip("Prefab físico solto ao quebrar (fallback / drops no chão em fases futuras).")]
         [SerializeField] private GameObject dropPrefab;
         [Tooltip("Quantidade mínima e máxima de drops (x = min, y = max).")]
         [SerializeField] private Vector2Int dropAmount = new(1, 1);
@@ -46,6 +49,7 @@ namespace DeepDigger.Gameplay.World
         public int HardnessTier => hardnessTier;
         public TileBase Tile => tile;
         public Color Color => color;
+        public ItemDefinition DropItem => dropItem;
         public GameObject DropPrefab => dropPrefab;
         public GameObject HitEffect => hitEffect;
         public GameObject BreakEffect => breakEffect;
